@@ -1,5 +1,8 @@
 package com.tzj.lwhlisp;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class App {
   public static void main(String[] args) {
     System.out.println("Welcome to lwh lisp");
@@ -25,6 +28,35 @@ public class App {
 
     atom = Util.cons(Util.makeSym("foo"), Util.nil);
     System.out.println(atom);
+
+    atom =
+        Util.cons(
+            Util.makeSym("foo"),
+            Util.cons(
+                Util.makeInt(100),
+                Util.cons(Util.makeSym("bar"), Util.cons(Util.makeInt(200), Util.nil))));
+    System.out.println(atom);
+
+    atom = Util.makeSym("foo");
+    System.out.println(atom.hashCode());
+    atom = Util.makeSym("foo");
+    System.out.println(atom.hashCode());
+  }
+}
+
+class Environment {
+  private static Map<String, Atom> symbolTable = new HashMap<>();
+
+  public static void addSymbol(String sym, Atom atom) {
+    symbolTable.put(sym, atom);
+  }
+
+  public static boolean hasSymbol(String sym) {
+    return symbolTable.containsKey(sym);
+  }
+
+  public static Atom retrieveAtom(String sym) {
+    return symbolTable.get(sym);
   }
 }
 
@@ -36,7 +68,13 @@ class Util {
   }
 
   public static Atom makeSym(String s) {
-    return new AtomSymbol(s);
+    if (Environment.hasSymbol(s)) {
+      return Environment.retrieveAtom(s);
+    }
+
+    Environment.addSymbol(s, new AtomSymbol(s));
+
+    return Environment.retrieveAtom(s);
   }
 
   public static Atom cons(Atom car, Atom cdr) {
@@ -102,20 +140,14 @@ record AtomPair(Atom car, Atom cdr) implements Atom {
     sb.append(car().toString());
     var atom = cdr();
 
-    while (!(atom instanceof AtomNil)) {
+    while (!atom.equals(Util.nil)) {
       if (atom instanceof AtomPair carPair) {
         sb.append(" ");
         sb.append(carPair.car().toString());
         atom = carPair.cdr();
-
-        if (atom instanceof AtomPair cdrPair) {
-          sb.append(" ");
-          sb.append(cdrPair.car().toString());
-          atom = cdrPair.cdr();
-        } else {
-          sb.append(" . ").append(atom.toString());
-          break;
-        }
+      } else {
+        sb.append(" . ").append(atom.toString());
+        break;
       }
     }
 
